@@ -16,13 +16,13 @@ contract AccessControl {
             "IAuthorizationControl address must be a contract"
         );
 
-        bool checkIsCourseClassCertificateType = ERC165Checker
+        bool checkIsAuthorizationControl = ERC165Checker
             .supportsInterface(
                 addrAuthorizationControl,
                 type(IAuthorizationControl).interfaceId
             );
         require(
-            checkIsCourseClassCertificateType,
+            checkIsAuthorizationControl,
             "AuthorizationControl address must be the same type IAuthorizationControl"
         );
 
