@@ -10,17 +10,16 @@ contract AccessControl {
 
     IAuthorizationControl public authorizationControl;
 
-    constructor(address addrAuthorizationControl)  {
+    constructor(address addrAuthorizationControl) {
         require(
             addrAuthorizationControl.isContract(),
             "IAuthorizationControl address must be a contract"
         );
 
-        bool checkIsAuthorizationControl = ERC165Checker
-            .supportsInterface(
-                addrAuthorizationControl,
-                type(IAuthorizationControl).interfaceId
-            );
+        bool checkIsAuthorizationControl = ERC165Checker.supportsInterface(
+            addrAuthorizationControl,
+            type(IAuthorizationControl).interfaceId
+        );
         require(
             checkIsAuthorizationControl,
             "AuthorizationControl address must be the same type IAuthorizationControl"

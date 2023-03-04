@@ -19,8 +19,8 @@ abstract contract Owned {
     address public owner;
 
     modifier onlyOwner() virtual {
-           console.log( "onlyOwner" , owner);
-              console.log( "(msg.sender " , msg.sender );
+        console.log("onlyOwner", owner);
+        console.log("(msg.sender ", msg.sender);
         require(msg.sender == owner, "UNAUTHORIZED");
 
         _;
@@ -30,8 +30,8 @@ abstract contract Owned {
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner)    {
-           console.log( "Owned" , owner);
+    constructor(address _owner) {
+        console.log("Owned", owner);
         owner = _owner;
 
         emit OwnershipTransferred(address(0), _owner);
