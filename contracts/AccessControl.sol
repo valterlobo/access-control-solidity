@@ -10,7 +10,7 @@ contract AccessControl {
 
     IAuthorizationControl public authorizationControl;
 
-    constructor(address addrAuthorizationControl) {
+    constructor(address addrAuthorizationControl)  {
         require(
             addrAuthorizationControl.isContract(),
             "IAuthorizationControl address must be a contract"
@@ -26,7 +26,7 @@ contract AccessControl {
             "AuthorizationControl address must be the same type IAuthorizationControl"
         );
 
-        authorizationControl = AuthorizationControl(addrAuthorizationControl);
+        authorizationControl = IAuthorizationControl(addrAuthorizationControl);
     }
 
     modifier onlyRole(bytes32 role_) {

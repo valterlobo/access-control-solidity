@@ -4,13 +4,15 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "./IAuthorizationControl.sol";
+import "./Owned.sol";
 
-contract AuthorizationControl is ERC165, IAuthorizationControl {
+import "hardhat/console.sol";
+
+contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
     // =========  EVENTS ========= //
 
     event RoleGranted(bytes32 indexed role_, address indexed addr_);
     event RoleRevoked(bytes32 indexed role_, address indexed addr_);
-    event OwnershipTransferred(address indexed user, address indexed newOwner);
 
     // =========  ERRORS ========= //
 
@@ -24,28 +26,13 @@ contract AuthorizationControl is ERC165, IAuthorizationControl {
 
     /// @notice Mapping for if an address has a policy-defined role.
     mapping(address => mapping(bytes32 => bool)) public hasRole;
-    address public owner;
-
-    modifier Permissioned() virtual {
-        require(msg.sender == owner, "UNAUTHORIZED");
-
-        _;
-    }
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner) {
-        owner = _owner;
-
-        emit OwnershipTransferred(address(0), _owner);
-    }
-
-    function transferOwnership(address newOwner) public virtual Permissioned {
-        owner = newOwner;
-
-        emit OwnershipTransferred(msg.sender, newOwner);
+    constructor(address _owner) Owned(_owner) {
+        console.log("constructor", _owner);
     }
 
     //============================================================================================//
@@ -53,7 +40,9 @@ contract AuthorizationControl is ERC165, IAuthorizationControl {
     //============================================================================================//
 
     /// @notice Function to grant policy-defined roles to some address. Can only be called by admin.
-    function saveRole(bytes32 role_, address addr_) external Permissioned {
+    function saveRole(bytes32 role_, address addr_) public onlyOwner {
+        console.log(msg.sender);
+
         if (hasRole[addr_][role_])
             revert ROLES_AddressAlreadyHasRole(addr_, role_);
 
@@ -66,7 +55,7 @@ contract AuthorizationControl is ERC165, IAuthorizationControl {
     }
 
     /// @notice "Modifier" to restrict policy function access to certain addresses with a role.
-    function removeRole(bytes32 role_, address addr_) external Permissioned {
+    function removeRole(bytes32 role_, address addr_) external onlyOwner {
         if (!hasRole[addr_][role_])
             revert ROLES_AddressDoesNotHaveRole(addr_, role_);
 

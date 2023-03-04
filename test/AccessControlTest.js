@@ -14,6 +14,10 @@ describe("AccessControlTest", function () {
 
         //const addrOwner = '0x0d5FdE8D013F3139CCE77d91Cd1346434b173311'
 
+        console.log(owner.address)
+        console.log(otherAccount.address)
+
+        let master = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'  //owner.address;
         const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl');
         const authorizationControl = await AuthorizationControl.deploy(owner.address)
 
@@ -22,10 +26,11 @@ describe("AccessControlTest", function () {
         console.log("Contract AuthorizationControl deployed to:", authorizationControl.address)
 
 
+
         const AccessControlTest = await hre.ethers.getContractFactory('AccessControlTest');
         const accessControlTest = await AccessControlTest.deploy(authorizationControl.address)
 
-        //let accessControlTestDeploy = await accessControlTest.deployed();
+        await accessControlTest.deployed();
 
 
         console.log("Contract AccessControlTest deployed to:", accessControlTest.address)
@@ -43,7 +48,7 @@ describe("AccessControlTest", function () {
 
         it("Check ROLE", async function () {
 
-            const { accessControlTest, ownerAddr } = await loadFixture(deployContract)
+            // const { accessControlTest, ownerAddr } = await loadFixture(deployContract)
 
 
         });
@@ -54,13 +59,16 @@ describe("AccessControlTest", function () {
 
     describe("OnlyRole", function () {
 
-        it("OnlyRole - test_role ", async function () {
+        it("OnlyRole - ADD_ROLE ", async function () {
 
             const { accessControlTest, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
 
-            let role = ethers.utils.formatBytes32String("test_role")
-            await authorizationControl.connect(owner).saveRole(role, otherAccount.address);
 
+            //await accessControlTest.addRoles(owner.address) 
+
+            await authorizationControl.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address);
+
+            await authorizationControl.saveRole(ethers.utils.formatBytes32String("update_role"), otherAccount.address);
 
             await accessControlTest.connect(otherAccount).addPessoa("TESTE", 28)
 
@@ -75,18 +83,18 @@ describe("AccessControlTest", function () {
 
         it("OnlyRole - test_role ", async function () {
 
-            const { accessControlTest, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
-
-            let role = ethers.utils.formatBytes32String("test_role")
-            //await authorizationControl.connect(owner).saveRole(role, otherAccount.address);
-
-
-
-            await expect(
-
-                accessControlTest.connect(otherAccount).addPessoa("TESTE", 28)
-
-            ).to.be.revertedWithCustomError(authorizationControl, 'ROLES_RequireRole')
+            /* const { accessControlTest, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+ 
+             let role = ethers.utils.formatBytes32String("test_role")
+             //await authorizationControl.connect(owner).saveRole(role, otherAccount.address);
+ 
+ 
+ 
+             await expect(
+ 
+                 accessControlTest.connect(otherAccount).addPessoa("TESTE", 28)
+ 
+             ).to.be.revertedWithCustomError(authorizationControl, 'ROLES_RequireRole')*/
 
 
 

@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.10;
 
-import "./AccessControl.sol";
+import "./MyAccessControl.sol";
 
-contract AccessControlTest is AccessControl {
+contract AccessControlTest is MyAccessControl {
     struct Pessoa {
         string name;
         uint8 idade;
         uint id;
         address owner;
     }
-
-    bytes32 testRole = "test_role";
 
     event PessoaAdicionada(uint id, string name);
 
@@ -21,7 +19,7 @@ contract AccessControlTest is AccessControl {
 
     constructor(
         address addrAuthorizationControl
-    ) AccessControl(addrAuthorizationControl) {
+    ) MyAccessControl(addrAuthorizationControl) {
         count = 0;
     }
 
@@ -30,7 +28,7 @@ contract AccessControlTest is AccessControl {
     function addPessoa(
         string memory _name,
         uint8 _idade
-    ) public onlyRole(testRole) {
+    ) public onlyRole(MyAccessControl.ADD_ROLE) {
         count += 1;
         Pessoa memory pessoa = Pessoa(_name, _idade, count, msg.sender);
         pessoas[count] = pessoa;
@@ -42,15 +40,23 @@ contract AccessControlTest is AccessControl {
         return pessoas[_id];
     }
 
-    function updateName(uint _id, string memory _name) public  onlyRole(testRole)  {
+    function updateName(
+        uint _id,
+        string memory _name
+    ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
         pessoas[_id].name = _name;
     }
 
-    function updateIdade(uint _id, uint8 _idade) public  onlyRole(testRole)  {
+    function updateIdade(
+        uint _id,
+        uint8 _idade
+    ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
         pessoas[_id].idade = _idade;
     }
 
-    function deletePessoa(uint _id) public  onlyRole(testRole)  {
+    function deletePessoa(
+        uint _id
+    ) public onlyRole(MyAccessControl.DELETE_ROLE) {
         delete pessoas[_id];
     }
 }
