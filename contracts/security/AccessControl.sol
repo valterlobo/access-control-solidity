@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.10;
+pragma solidity 0.8.18;
 
 import "./AuthorizationControl.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -30,6 +30,11 @@ contract AccessControl {
 
     modifier onlyRole(bytes32 role_) {
         authorizationControl.requireRole(role_, msg.sender);
+        _;
+    }
+
+    modifier onlyRoleGroup(bytes32 group, bytes32 role) {
+        authorizationControl.requireRoleGroup(group, role, msg.sender);
         _;
     }
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.10;
+pragma solidity 0.8.18;
 
 import "./MyAccessControl.sol";
 
-contract AccessControlTest is MyAccessControl {
+contract PessoasManager is MyAccessControl {
     struct Pessoa {
         string name;
         uint8 idade;
@@ -26,37 +26,42 @@ contract AccessControlTest is MyAccessControl {
     // Adicionar pessoa
 
     function addPessoa(
-        string memory _name,
-        uint8 _idade
+        string memory pName,
+        uint8 pIdade
     ) public onlyRole(MyAccessControl.ADD_ROLE) {
         count += 1;
-        Pessoa memory pessoa = Pessoa(_name, _idade, count, msg.sender);
+        Pessoa memory pessoa = Pessoa(pName, pIdade, count, msg.sender);
         pessoas[count] = pessoa;
-        emit PessoaAdicionada(count, _name);
+        emit PessoaAdicionada(count, pName);
     }
 
     // Funções Getters & Setter para nome
-    function readPessoa(uint _id) public view returns (Pessoa memory) {
-        return pessoas[_id];
+    function readPessoa(uint id) public view returns (Pessoa memory) {
+        return pessoas[id];
     }
 
     function updateName(
-        uint _id,
-        string memory _name
+        uint id,
+        string memory pName
     ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
-        pessoas[_id].name = _name;
+        pessoas[id].name = pName;
     }
 
     function updateIdade(
-        uint _id,
-        uint8 _idade
+        uint id,
+        uint8 idade
     ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
-        pessoas[_id].idade = _idade;
+        pessoas[id].idade = idade;
     }
 
     function deletePessoa(
-        uint _id
-    ) public onlyRole(MyAccessControl.DELETE_ROLE) {
-        delete pessoas[_id];
+        uint id
+    )
+        public
+        onlyRoleGroup(MyAccessControl.ADM_GROUP, MyAccessControl.DELETE_ROLE)
+    {
+        require(pessoas[id].idade > 0, "maior que zero ");
+
+        delete pessoas[id];
     }
 }

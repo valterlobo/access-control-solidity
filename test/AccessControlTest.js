@@ -14,54 +14,43 @@ describe("AccessControlTest", function () {
 
         //const addrOwner = '0x0d5FdE8D013F3139CCE77d91Cd1346434b173311'
 
-        console.log(owner.address)
-        console.log(otherAccount.address)
+        //console.log(owner.address)
+        //console.log(otherAccount.address)
 
         let master = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'  //owner.address;
-        const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl');
+        const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl')
         const authorizationControl = await AuthorizationControl.deploy(owner.address)
 
-        await authorizationControl.deployed();
-
-        console.log("Contract AuthorizationControl deployed to:", authorizationControl.address)
+        await authorizationControl.deployed()
 
 
+        const PessoasManager = await hre.ethers.getContractFactory('PessoasManager')
+        const pessoasManager = await PessoasManager.deploy(authorizationControl.address)
+        await pessoasManager.deployed()
 
-        const AccessControlTest = await hre.ethers.getContractFactory('AccessControlTest');
-        const accessControlTest = await AccessControlTest.deploy(authorizationControl.address)
+        const AnimalManager = await hre.ethers.getContractFactory('AnimalManager')
+        const animalManager = await AnimalManager.deploy(authorizationControl.address)
+        await animalManager.deployed()
 
-        await accessControlTest.deployed();
-
-
-        console.log("Contract AccessControlTest deployed to:", accessControlTest.address)
-
-
-
-        // let role = ethers.utils.formatBytes32String('test_role')
-        //await authorizationControl.saveRole(role, owner);
-
-        //await accessControlTest.addPessoa("TESTE", 28)
-        return { accessControlTest, authorizationControl, owner, otherAccount }
+        return { animalManager, pessoasManager, authorizationControl, owner, otherAccount }
     }
 
     describe("Deployment", function () {
 
         it("Check ROLE", async function () {
 
-            // const { accessControlTest, ownerAddr } = await loadFixture(deployContract)
+
 
 
         });
 
     });
 
-
-
     describe("OnlyRole", function () {
 
         it("OnlyRole - ADD_ROLE ", async function () {
 
-            const { accessControlTest, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
 
 
             //await accessControlTest.addRoles(owner.address) 
@@ -70,43 +59,47 @@ describe("AccessControlTest", function () {
 
             await authorizationControl.saveRole(ethers.utils.formatBytes32String("update_role"), otherAccount.address);
 
-            await accessControlTest.connect(otherAccount).addPessoa("TESTE", 28)
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
 
-            await accessControlTest.connect(otherAccount).updateName(1, "TESTE SECURITY xxxxx")
+            await pessoasManager.connect(otherAccount).updateName(1, "TESTE SECURITY xxxxx")
 
-            console.log(await accessControlTest.readPessoa(1))
-
-        });
-
-
-
-
-        it("OnlyRole - test_role ", async function () {
-
-            /* const { accessControlTest, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
- 
-             let role = ethers.utils.formatBytes32String("test_role")
-             //await authorizationControl.connect(owner).saveRole(role, otherAccount.address);
- 
- 
- 
-             await expect(
- 
-                 accessControlTest.connect(otherAccount).addPessoa("TESTE", 28)
- 
-             ).to.be.revertedWithCustomError(authorizationControl, 'ROLES_RequireRole')*/
-
-
-
-
-
-
-            //ROLES_RequireRole("0x746573745f726f6c650000000000000000000000000000000000000000000000")
-
-            // console.log(await accessControlTest.readPessoa(1))
+            //console.log(await accessControlTest.readPessoa(1))
 
         });
 
+    });
+
+    describe("OnlyRoleGroup", function () {
+
+        it("OnlyRoleGroup - ADD_GROUP ", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+
+            const roleDelete = ethers.utils.formatBytes32String("delete_role")
+            const groupADM = ethers.utils.formatBytes32String("adm_group")
+
+            await authorizationControl.saveRoleGroup(groupADM, roleDelete, otherAccount.address);
+
+            await authorizationControl.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address);
+
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
+
+            await pessoasManager.connect(otherAccount).deletePessoa(1)
+
+            await authorizationControl.removeRoleGroup(groupADM, roleDelete, otherAccount.address)
+
+            //await accessControlTest.connect(otherAccount).deletePessoa(1)
+
+            await expect(pessoasManager.connect(otherAccount).deletePessoa(1)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_RequireRoleGroup');
+
+            await animalManager.connect(otherAccount).addAnimal("GLIMER", "GATO", 28)
+
+
+            await expect(animalManager.connect(otherAccount).deleteAnimal(1)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_RequireRoleGroup');
+
+        });
 
     });
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.0;
+pragma solidity 0.8.18;
 
-import "hardhat/console.sol";
 
 /// @notice Simple single owner authorization mixin.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/auth/Owned.sol)
@@ -19,8 +18,8 @@ abstract contract Owned {
     address public owner;
 
     modifier onlyOwner() virtual {
-        console.log("onlyOwner", owner);
-        console.log("(msg.sender ", msg.sender);
+        //console.log("onlyOwner", owner);
+        //console.log("(msg.sender ", msg.sender);
         require(msg.sender == owner, "UNAUTHORIZED");
 
         _;
@@ -31,7 +30,6 @@ abstract contract Owned {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address _owner) {
-        console.log("Owned", owner);
         owner = _owner;
 
         emit OwnershipTransferred(address(0), _owner);
