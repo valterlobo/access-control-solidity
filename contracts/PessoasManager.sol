@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.18;
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./MyAccessControl.sol";
 
@@ -25,10 +26,7 @@ contract PessoasManager is MyAccessControl {
 
     // Adicionar pessoa
 
-    function addPessoa(
-        string memory pName,
-        uint8 pIdade
-    ) public onlyRole(MyAccessControl.ADD_ROLE) {
+    function addPessoa(string memory pName, uint8 pIdade) public {
         count += 1;
         Pessoa memory pessoa = Pessoa(pName, pIdade, count, msg.sender);
         pessoas[count] = pessoa;

@@ -4,9 +4,9 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "./IAuthorizationControl.sol";
-import "./Owned.sol";
+import "./Master.sol";
 
-contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
+contract AuthorizationControl is ERC165, IAuthorizationControl, Master {
     // =========  EVENTS ========= //
 
     event RoleGranted(bytes32 indexed role, address indexed addr);
@@ -24,9 +24,7 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
     );
 
     // =========  ERRORS ========= //
-
     error ROLES_InvalidRole(bytes32 role_);
-    error ROLES_RequireRole(bytes32 role_);
     error ROLES_AddressAlreadyHasRole(address addr_, bytes32 role_);
     error ROLES_AddressDoesNotHaveRole(address addr_, bytes32 role_);
     error ROLES_RoleDoesNotExist(bytes32 role_);
@@ -37,8 +35,6 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
         bytes32 role
     );
 
-    error ROLES_RequireRoleGroup(bytes32 group, bytes32 role);
-
     error ROLES_AddressDoesNotHaveRoleGroup(
         address addr,
         bytes32 group,
@@ -47,49 +43,36 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
 
     error InvalidName(bytes32 nm);
 
-    //======MODIFIER ==========//
-    modifier onlyRole(bytes32 role_) {
-        requireRole(role_, msg.sender);
-        _;
-    }
-
-    modifier onlyRoleGroup(bytes32 group, bytes32 role) {
-        requireRoleGroup(group, role, msg.sender);
-        _;
-    }
-
-    modifier onlyMaster() virtual {
-        require(msg.sender == getOwner(), "UNAUTHORIZED");
-
-        _;
-    }
-
     // =========  STATE ========= //
+    //Roles
+    mapping(address => mapping(bytes32 => bool)) private hasRole;
+    mapping(bytes32 => address[]) private usersRole;
+    bytes32[] public roles;
 
-    /// @notice Mapping for if an address has a policy-defined role.
-    mapping(address => mapping(bytes32 => bool)) public hasRole;
+    //Role Group
     mapping(address => mapping(bytes32 => mapping(bytes32 => bool)))
         public hasRoleGroup;
+    mapping(bytes32 => mapping(bytes32 => address[])) public usersRoleGroup;
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner) Owned(_owner) {}
+    constructor(address _owner) Master(_owner) {}
 
     //============================================================================================//
     //                                       CORE FUNCTIONS                                       //
     //============================================================================================//
 
     /// @notice Function to grant policy-defined roles to some address. Can only be called by admin.
-    function saveRole(bytes32 role, address addr) public onlyOwner {
+    function saveRole(bytes32 role, address addr) public onlyMaster {
         if (hasRole[addr][role]) revert ROLES_AddressAlreadyHasRole(addr, role);
 
         ensureValidName(role);
 
         // Grant role to the address
         hasRole[addr][role] = true;
-
+        usersRole[role].push(addr);
         emit RoleGranted(role, addr);
     }
 
@@ -97,7 +80,7 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
         bytes32 group,
         bytes32 role,
         address addr
-    ) public onlyOwner {
+    ) public onlyMaster {
         if (hasRoleGroup[addr][group][role])
             revert ROLES_AddressAlreadyHasRoleGroup(addr, group, role);
 
@@ -106,30 +89,48 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
 
         // Grant role to the address
         hasRoleGroup[addr][group][role] = true;
-
+        usersRoleGroup[group][role].push(addr);
         emit RoleGroupGranted(group, role, addr);
     }
 
-    /// @notice "Modifier" to restrict policy function access to certain addresses with a role.
-    function removeRole(bytes32 role_, address addr_) external onlyOwner {
-        if (!hasRole[addr_][role_])
-            revert ROLES_AddressDoesNotHaveRole(addr_, role_);
+    function removeRole(bytes32 role, address addr) external onlyMaster {
+        if (!hasRole[addr][role])
+            revert ROLES_AddressDoesNotHaveRole(addr, role);
 
-        hasRole[addr_][role_] = false;
+        hasRole[addr][role] = false;
 
-        emit RoleRevoked(role_, addr_);
+        address[] memory users = usersRole[role];
+        int idx = findIndex(addr, users);
+        if (idx >= 0) {
+            uint i = uint(idx);
+            address[] storage arrUsers = usersRole[role];
+            arrUsers[i] = arrUsers[arrUsers.length - 1];
+            //delete the last element
+            arrUsers.pop();
+        }
+
+        emit RoleRevoked(role, addr);
     }
 
     function removeRoleGroup(
         bytes32 group,
         bytes32 role,
         address addr
-    ) external onlyOwner {
+    ) external onlyMaster {
         if (!hasRoleGroup[addr][group][role])
             revert ROLES_AddressDoesNotHaveRoleGroup(addr, group, role);
 
         hasRoleGroup[addr][group][role] = false;
 
+        address[] memory usersGroup = usersRoleGroup[group][role];
+        int idx = findIndex(addr, usersGroup);
+        if (idx >= 0) {
+            uint i = uint(idx);
+            address[] storage arrUsers = usersRoleGroup[group][role];
+            arrUsers[i] = arrUsers[arrUsers.length - 1];
+            //delete the last element
+            arrUsers.pop();
+        }
         emit RoleGroupRevoked(group, role, addr);
     }
 
@@ -137,18 +138,19 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
     //                                       VIEW FUNCTIONS                                       //
     //============================================================================================//
 
-    /// @notice "Modifier" to restrict policy function access to certain addresses with a role.
-    function requireRole(bytes32 role, address caller) public view {
-        if (!hasRole[caller][role]) revert ROLES_RequireRole(role);
+    function requireRole(
+        bytes32 role,
+        address caller
+    ) public view returns (bool) {
+        return hasRole[caller][role];
     }
 
     function requireRoleGroup(
         bytes32 group,
         bytes32 role,
         address caller
-    ) public view {
-        if (!hasRoleGroup[caller][group][role])
-            revert ROLES_RequireRoleGroup(group, role);
+    ) public view returns (bool) {
+        return hasRoleGroup[caller][group][role];
     }
 
     function ensureValidName(bytes32 nm) public pure {
@@ -163,7 +165,32 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Owned {
         }
     }
 
-    function getOwner() public view returns (address) {
+    function findIndex(
+        address value,
+        address[] memory values
+    ) public pure returns (int) {
+        for (uint i = 0; i < values.length; i++) {
+            if (values[i] == value) {
+                return int(i);
+            }
+        }
+        return -1;
+    }
+
+    function getUsersByRole(
+        bytes32 role
+    ) public view returns (address[] memory) {
+        return usersRole[role];
+    }
+
+    function getUsersByRoleGroup(
+        bytes32 group,
+        bytes32 role
+    ) public view returns (address[] memory) {
+        return usersRoleGroup[group][role];
+    }
+
+    function getMaster() public view returns (address) {
         return owner;
     }
 

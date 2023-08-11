@@ -14,7 +14,7 @@ contract AnimalManager is MyAccessControl {
 
     uint count;
 
-    mapping(uint => Animal) animais;
+    mapping(uint => Animal) private animais;
 
     constructor(
         address addrAuthorizationControl
@@ -28,8 +28,7 @@ contract AnimalManager is MyAccessControl {
         uint8 pIdade
     ) public onlyRole(MyAccessControl.ADD_ROLE) {
         count += 1;
-        Animal memory pessoa = Animal(pName, pTipo, pIdade, count, msg.sender);
-        animais[count] = pessoa;
+        animais[count] = Animal(pName, pTipo, pIdade, count, msg.sender);
     }
 
     function deleteAnimal(

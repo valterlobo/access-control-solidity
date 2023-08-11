@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.18;
 
-
-/// @notice Simple single owner authorization mixin.
-/// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/auth/Owned.sol)
-abstract contract Owned {
+abstract contract Master {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event OwnershipTransferred(address indexed user, address indexed newOwner);
+    event MasterTransferred(address indexed user, address indexed newOwner);
 
     /*//////////////////////////////////////////////////////////////
                             OWNERSHIP STORAGE
@@ -17,7 +14,7 @@ abstract contract Owned {
 
     address public owner;
 
-    modifier onlyOwner() virtual {
+    modifier onlyMaster() virtual {
         //console.log("onlyOwner", owner);
         //console.log("(msg.sender ", msg.sender);
         require(msg.sender == owner, "UNAUTHORIZED");
@@ -32,16 +29,16 @@ abstract contract Owned {
     constructor(address _owner) {
         owner = _owner;
 
-        emit OwnershipTransferred(address(0), _owner);
+        emit MasterTransferred(address(0), _owner);
     }
 
     /*//////////////////////////////////////////////////////////////
                              OWNERSHIP LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function transferMaster(address newOwner) public virtual onlyMaster {
+        require(newOwner != address(0), "Invalid address(0)");
         owner = newOwner;
-
-        emit OwnershipTransferred(msg.sender, newOwner);
+        emit MasterTransferred(msg.sender, newOwner);
     }
 }

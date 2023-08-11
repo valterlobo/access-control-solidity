@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import "./security/AccessControl.sol";
 
 contract MyAccessControl is AccessControl {
-
     
     bytes32 constant ADM_GROUP = "adm_group";
 
@@ -18,8 +17,5 @@ contract MyAccessControl is AccessControl {
 
     bytes32 constant AUDIT_ROLE = "audit_role";
 
-
     constructor(address authControl) AccessControl(authControl) {}
-
-
 }

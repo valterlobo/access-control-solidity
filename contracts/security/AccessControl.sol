@@ -8,6 +8,10 @@ import "@openzeppelin/contracts/utils/Address.sol";
 contract AccessControl {
     using Address for address;
 
+    // =========  ERRORS ========= //
+    error ROLES_RequireRole(bytes32 role);
+    error ROLES_RequireRoleGroup(bytes32 group, bytes32 role);
+
     IAuthorizationControl public authorizationControl;
 
     constructor(address addrAuthorizationControl) {
@@ -28,18 +32,21 @@ contract AccessControl {
         authorizationControl = IAuthorizationControl(addrAuthorizationControl);
     }
 
-    modifier onlyRole(bytes32 role_) {
-        authorizationControl.requireRole(role_, msg.sender);
+    //======MODIFIER ==========//
+    modifier onlyRole(bytes32 role) {
+        if (!authorizationControl.requireRole(role, msg.sender))
+            revert ROLES_RequireRole(role);
         _;
     }
 
     modifier onlyRoleGroup(bytes32 group, bytes32 role) {
-        authorizationControl.requireRoleGroup(group, role, msg.sender);
+        if (!authorizationControl.requireRoleGroup(group, role, msg.sender))
+            revert ROLES_RequireRoleGroup(group, role);
         _;
     }
 
     modifier onlyMaster() virtual {
-        require(msg.sender == authorizationControl.getOwner(), "UNAUTHORIZED");
+        require(msg.sender == authorizationControl.getMaster(), "UNAUTHORIZED");
 
         _;
     }
@@ -48,5 +55,14 @@ contract AccessControl {
         AuthorizationControl authorizationControl_
     ) external onlyMaster {
         authorizationControl = authorizationControl_;
+    }
+
+    function getAuthorizationControl()
+        external
+        view
+        onlyMaster
+        returns (address)
+    {
+        return address(authorizationControl);
     }
 }
