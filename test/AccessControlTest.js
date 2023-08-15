@@ -35,7 +35,7 @@ describe("AccessControlTest", function () {
         const animalManager = await AnimalManager.deploy(accessControl.address)
         await animalManager.deployed()
 
-        return { animalManager, pessoasManager, authorizationControl, owner, otherAccount , accessControl }
+        return { animalManager, pessoasManager, authorizationControl, owner, otherAccount, accessControl }
     }
 
     describe("Deployment", function () {
@@ -111,7 +111,7 @@ describe("AccessControlTest", function () {
 
         it("onlyMaster ", async function () {
 
-            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount , accessControl } = await loadFixture(deployContract)
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount, accessControl } = await loadFixture(deployContract)
 
             await authorizationControl.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address);
 
@@ -119,6 +119,9 @@ describe("AccessControlTest", function () {
                 'UNAUTHORIZED');
 
             //await pessoasManager.connect(owner).setAuthorizationControl(pessoasManager.address)
+
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
+
 
             await expect(
                 accessControl.connect(owner).setAuthorizationControl(pessoasManager.address)
@@ -128,24 +131,34 @@ describe("AccessControlTest", function () {
                 accessControl.connect(owner).setAuthorizationControl(otherAccount.address)
             ).to.be.revertedWith("IAuthorizationControl address must be a contract")
 
-            console.log("OLD")
-            console.log(await pessoasManager.connect(owner).getAuthorizationControl())
+            //console.log("OLD")           
+            const oldAuthControl = await pessoasManager.connect(owner).getAuthorizationControl()
 
             const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl')
             const authorizationControlNew = await AuthorizationControl.deploy(owner.address)
 
             await authorizationControlNew.deployed()
 
-            console.log("NEW")
+            //console.log("NEW")
+            //console.log(authorizationControlNew.address)
 
-            console.log(authorizationControlNew.address)
+            expect(oldAuthControl).to.not.equal(authorizationControlNew.address)
 
             await accessControl.connect(owner).setAuthorizationControl(authorizationControlNew.address)
 
             const addrAuthPessoa = await pessoasManager.connect(owner).getAuthorizationControl()
-            console.log(addrAuthPessoa)
+            //console.log(addrAuthPessoa)
+            expect(addrAuthPessoa).to.equal(authorizationControlNew.address)
             const addrAuthAnimal = await animalManager.connect(owner).getAuthorizationControl()
-            console.log(addrAuthAnimal)
+            //console.log(addrAuthAnimal)
+            expect(addrAuthAnimal).to.equal(authorizationControlNew.address)
+            expect(addrAuthPessoa).to.equal(addrAuthAnimal)
+
+            await expect(pessoasManager.connect(otherAccount).addPessoa("TESTE2", 28)).to.be.revertedWithCustomError(pessoasManager,
+                'ROLES_RequireRole')
+
+            await authorizationControlNew.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address)
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE2", 28)
 
         });
 

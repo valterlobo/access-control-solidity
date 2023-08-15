@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./AccessControlRoleGroup.sol";
 import "./security/AccessControlProxy.sol";
 
-contract PessoasManager is AccessControlRoleGroup ,AccessControlProxy {
+contract PessoasManager is AccessControlRoleGroup, AccessControlProxy {
     struct Pessoa {
         string name;
         uint8 idade;
@@ -19,15 +19,16 @@ contract PessoasManager is AccessControlRoleGroup ,AccessControlProxy {
 
     mapping(uint => Pessoa) pessoas;
 
-    constructor(
-        address addrAcessControl
-    )AccessControlProxy(addrAcessControl){
+    constructor(address addrAcessControl) AccessControlProxy(addrAcessControl) {
         count = 0;
     }
 
     // Adicionar pessoa
 
-    function addPessoa(string memory pName, uint8 pIdade) public {
+    function addPessoa(
+        string memory pName,
+        uint8 pIdade
+    ) public onlyRole(AccessControlRoleGroup.ADD_ROLE) {
         count += 1;
         Pessoa memory pessoa = Pessoa(pName, pIdade, count, msg.sender);
         pessoas[count] = pessoa;
@@ -57,7 +58,10 @@ contract PessoasManager is AccessControlRoleGroup ,AccessControlProxy {
         uint id
     )
         public
-        onlyRoleGroup(AccessControlRoleGroup.ADM_GROUP, AccessControlRoleGroup.DELETE_ROLE)
+        onlyRoleGroup(
+            AccessControlRoleGroup.ADM_GROUP,
+            AccessControlRoleGroup.DELETE_ROLE
+        )
     {
         require(pessoas[id].idade > 0, "maior que zero ");
 
