@@ -6,18 +6,16 @@ abstract contract Master {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event MasterTransferred(address indexed user, address indexed newOwner);
+    event MasterTransferred(address indexed user, address indexed newMaster);
 
     /*//////////////////////////////////////////////////////////////
                             OWNERSHIP STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    address public owner;
+    address public master;
 
     modifier onlyMaster() virtual {
-        //console.log("onlyOwner", owner);
-        //console.log("(msg.sender ", msg.sender);
-        require(msg.sender == owner, "UNAUTHORIZED");
+        require(msg.sender == master, "UNAUTHORIZED");
 
         _;
     }
@@ -26,19 +24,19 @@ abstract contract Master {
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner) {
-        owner = _owner;
+    constructor(address _master) {
+        master = _master;
 
-        emit MasterTransferred(address(0), _owner);
+        emit MasterTransferred(address(0), _master);
     }
 
     /*//////////////////////////////////////////////////////////////
                              OWNERSHIP LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function transferMaster(address newOwner) public virtual onlyMaster {
-        require(newOwner != address(0), "Invalid address(0)");
-        owner = newOwner;
-        emit MasterTransferred(msg.sender, newOwner);
+    function transferMaster(address newMaster) public virtual onlyMaster {
+        require(newMaster != address(0), "Invalid address(0)");
+        master = newMaster;
+        emit MasterTransferred(msg.sender, newMaster);
     }
 }

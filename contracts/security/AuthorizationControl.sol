@@ -24,10 +24,10 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Master {
     );
 
     // =========  ERRORS ========= //
-    error ROLES_InvalidRole(bytes32 role_);
-    error ROLES_AddressAlreadyHasRole(address addr_, bytes32 role_);
-    error ROLES_AddressDoesNotHaveRole(address addr_, bytes32 role_);
-    error ROLES_RoleDoesNotExist(bytes32 role_);
+    error ROLES_InvalidRole(bytes32 role);
+    error ROLES_AddressAlreadyHasRole(address addr, bytes32 role);
+    error ROLES_AddressDoesNotHaveRole(address addr, bytes32 role);
+    error ROLES_RoleDoesNotExist(bytes32 role);
 
     error ROLES_AddressAlreadyHasRoleGroup(
         address addr,
@@ -64,7 +64,6 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Master {
     //                                       CORE FUNCTIONS                                       //
     //============================================================================================//
 
-    /// @notice Function to grant policy-defined roles to some address. Can only be called by admin.
     function saveRole(bytes32 role, address addr) public onlyMaster {
         if (hasRole[addr][role]) revert ROLES_AddressAlreadyHasRole(addr, role);
 
@@ -191,7 +190,7 @@ contract AuthorizationControl is ERC165, IAuthorizationControl, Master {
     }
 
     function getMaster() public view returns (address) {
-        return owner;
+        return master;
     }
 
     //============================================================================================//

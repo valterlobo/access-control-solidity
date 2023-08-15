@@ -2,9 +2,10 @@
 pragma solidity 0.8.18;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./MyAccessControl.sol";
+import "./AccessControlRoleGroup.sol";
+import "./security/AccessControlProxy.sol";
 
-contract PessoasManager is MyAccessControl {
+contract PessoasManager is AccessControlRoleGroup ,AccessControlProxy {
     struct Pessoa {
         string name;
         uint8 idade;
@@ -19,8 +20,8 @@ contract PessoasManager is MyAccessControl {
     mapping(uint => Pessoa) pessoas;
 
     constructor(
-        address addrAuthorizationControl
-    ) MyAccessControl(addrAuthorizationControl) {
+        address addrAcessControl
+    )AccessControlProxy(addrAcessControl){
         count = 0;
     }
 
@@ -41,14 +42,14 @@ contract PessoasManager is MyAccessControl {
     function updateName(
         uint id,
         string memory pName
-    ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
+    ) public onlyRole(AccessControlRoleGroup.UPDATE_ROLE) {
         pessoas[id].name = pName;
     }
 
     function updateIdade(
         uint id,
         uint8 idade
-    ) public onlyRole(MyAccessControl.UPDATE_ROLE) {
+    ) public onlyRole(AccessControlRoleGroup.UPDATE_ROLE) {
         pessoas[id].idade = idade;
     }
 
@@ -56,7 +57,7 @@ contract PessoasManager is MyAccessControl {
         uint id
     )
         public
-        onlyRoleGroup(MyAccessControl.ADM_GROUP, MyAccessControl.DELETE_ROLE)
+        onlyRoleGroup(AccessControlRoleGroup.ADM_GROUP, AccessControlRoleGroup.DELETE_ROLE)
     {
         require(pessoas[id].idade > 0, "maior que zero ");
 

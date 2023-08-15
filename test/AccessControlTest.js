@@ -12,11 +12,6 @@ describe("AccessControlTest", function () {
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
 
-        //const addrOwner = '0x0d5FdE8D013F3139CCE77d91Cd1346434b173311'
-
-        //console.log(owner.address)
-        //console.log(otherAccount.address)
-
         let master = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'  //owner.address;
         const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl')
         const authorizationControl = await AuthorizationControl.deploy(owner.address)
@@ -24,15 +19,23 @@ describe("AccessControlTest", function () {
         await authorizationControl.deployed()
 
 
+        const AccessControl = await hre.ethers.getContractFactory('AccessControl')
+        const accessControl = await AccessControl.deploy(authorizationControl.address)
+
+        await accessControl.deployed()
+
+
+
+
         const PessoasManager = await hre.ethers.getContractFactory('PessoasManager')
-        const pessoasManager = await PessoasManager.deploy(authorizationControl.address)
+        const pessoasManager = await PessoasManager.deploy(accessControl.address)
         await pessoasManager.deployed()
 
         const AnimalManager = await hre.ethers.getContractFactory('AnimalManager')
-        const animalManager = await AnimalManager.deploy(authorizationControl.address)
+        const animalManager = await AnimalManager.deploy(accessControl.address)
         await animalManager.deployed()
 
-        return { animalManager, pessoasManager, authorizationControl, owner, otherAccount }
+        return { animalManager, pessoasManager, authorizationControl, owner, otherAccount , accessControl }
     }
 
     describe("Deployment", function () {
@@ -57,13 +60,13 @@ describe("AccessControlTest", function () {
 
             await authorizationControl.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address);
 
-            await authorizationControl.saveRole(ethers.utils.formatBytes32String("update_role"), otherAccount.address);
+            //await authorizationControl.saveRole(ethers.utils.formatBytes32String("update_role"), otherAccount.address);
 
             await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
 
-            await pessoasManager.connect(otherAccount).updateName(1, "TESTE SECURITY xxxxx")
 
-            //console.log(await accessControlTest.readPessoa(1))
+            await expect(pessoasManager.connect(otherAccount).updateName(1, "TESTE SECURITY xxxxx")).to.be.revertedWithCustomError(pessoasManager,
+                'ROLES_RequireRole');
 
         });
 
@@ -81,7 +84,7 @@ describe("AccessControlTest", function () {
 
             await authorizationControl.saveRoleGroup(groupADM, roleDelete, otherAccount.address);
 
-            await authorizationControl.saveRoleGroup(groupADM, addRole, otherAccount.address);  
+            await authorizationControl.saveRoleGroup(groupADM, addRole, otherAccount.address);
             await authorizationControl.saveRole(addRole, otherAccount.address);
 
             await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
@@ -97,9 +100,52 @@ describe("AccessControlTest", function () {
 
             await animalManager.connect(otherAccount).addAnimal("GLIMER", "GATO", 28)
 
-
             await expect(animalManager.connect(otherAccount).deleteAnimal(1)).to.be.revertedWithCustomError(animalManager,
                 'ROLES_RequireRoleGroup');
+
+        });
+
+    });
+
+    describe("onlyMaster", function () {
+
+        it("onlyMaster ", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount , accessControl } = await loadFixture(deployContract)
+
+            await authorizationControl.saveRole(ethers.utils.formatBytes32String("add_role"), otherAccount.address);
+
+            await expect(accessControl.connect(otherAccount).setAuthorizationControl(animalManager.address)).to.be.revertedWithCustomError(accessControl,
+                'UNAUTHORIZED');
+
+            //await pessoasManager.connect(owner).setAuthorizationControl(pessoasManager.address)
+
+            await expect(
+                accessControl.connect(owner).setAuthorizationControl(pessoasManager.address)
+            ).to.be.revertedWith("AuthorizationControl address must be the same type IAuthorizationControl")
+
+            await expect(
+                accessControl.connect(owner).setAuthorizationControl(otherAccount.address)
+            ).to.be.revertedWith("IAuthorizationControl address must be a contract")
+
+            console.log("OLD")
+            console.log(await pessoasManager.connect(owner).getAuthorizationControl())
+
+            const AuthorizationControl = await hre.ethers.getContractFactory('AuthorizationControl')
+            const authorizationControlNew = await AuthorizationControl.deploy(owner.address)
+
+            await authorizationControlNew.deployed()
+
+            console.log("NEW")
+
+            console.log(authorizationControlNew.address)
+
+            await accessControl.connect(owner).setAuthorizationControl(authorizationControlNew.address)
+
+            const addrAuthPessoa = await pessoasManager.connect(owner).getAuthorizationControl()
+            console.log(addrAuthPessoa)
+            const addrAuthAnimal = await animalManager.connect(owner).getAuthorizationControl()
+            console.log(addrAuthAnimal)
 
         });
 
@@ -122,10 +168,10 @@ describe("AccessControlTest", function () {
             await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
 
             const users1 = await authorizationControl.getUsersByRole(roleAdd)
-            console.log(users1)
+            //console.log(users1)
             await authorizationControl.removeRole(roleAdd, owner.address)
             const users2 = await authorizationControl.getUsersByRole(roleAdd)
-            console.log(users2)
+            //console.log(users2)
 
         });
 
@@ -145,17 +191,118 @@ describe("AccessControlTest", function () {
             //await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
 
             const users1 = await authorizationControl.getUsersByRoleGroup(groupADM, deleteRole)
-            console.log(users1)
+            //console.log(users1)
             await authorizationControl.removeRoleGroup(groupADM, deleteRole, otherAccount.address)
             const users2 = await authorizationControl.getUsersByRoleGroup(groupADM, deleteRole)
-            console.log(users2)
-            //remover novamente
+            //console.log(users2)
+
             const addRolex = ethers.utils.formatBytes32String("123333")
-            await authorizationControl.saveRoleGroup(groupADM, addRolex, otherAccount.address)
+            await expect(authorizationControl.saveRoleGroup(groupADM, addRolex, otherAccount.address)).to.be.revertedWithCustomError(authorizationControl,
+                'InvalidName');
 
         });
 
 
+    });
+
+    describe("saveRole", function () {
+
+        it("saveRole", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+            const roleDelete = ethers.utils.formatBytes32String("delete_role")
+            const roleAdd = ethers.utils.formatBytes32String("add_role")
+            await authorizationControl.saveRole(roleAdd, otherAccount.address)
+            await authorizationControl.saveRole(roleDelete, otherAccount.address)
+            await authorizationControl.saveRole(roleAdd, owner.address)
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
+            await authorizationControl.getUsersByRole(roleAdd)
+        });
+
+
+        it("saveRole - ROLES_AddressAlreadyHasRole", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+
+            const roleAdd = ethers.utils.formatBytes32String("add_role")
+            await authorizationControl.saveRole(roleAdd, otherAccount.address)
+            await pessoasManager.connect(otherAccount).addPessoa("TESTE", 28)
+            await expect(authorizationControl.saveRole(roleAdd, otherAccount.address)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_AddressAlreadyHasRole');
+        });
+
+        it("saveRole - invalid name", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+            const roleInvalid = ethers.utils.formatBytes32String("12232323&****")
+            await expect(authorizationControl.saveRole(roleInvalid, otherAccount.address)).to.be.revertedWithCustomError(authorizationControl,
+                'InvalidName');
+        });
+    });
+
+    describe("saveRoleGroup", function () {
+
+        it("saveRoleGroup", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+
+            const deleteRole = ethers.utils.formatBytes32String("delete_role")
+            const groupADM = ethers.utils.formatBytes32String("adm_group")
+
+            await authorizationControl.saveRoleGroup(groupADM, deleteRole, otherAccount.address);
+            await authorizationControl.saveRoleGroup(groupADM, deleteRole, owner.address);
+
+
+            await expect(authorizationControl.saveRoleGroup(groupADM, deleteRole, otherAccount.address)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_AddressAlreadyHasRoleGroup');
+
+
+            const users1 = await authorizationControl.getUsersByRoleGroup(groupADM, deleteRole)
+            //console.log(users1)
+            await authorizationControl.removeRoleGroup(groupADM, deleteRole, otherAccount.address)
+            const users2 = await authorizationControl.getUsersByRoleGroup(groupADM, deleteRole)
+            //console.log(users2)
+
+            const addRolex = ethers.utils.formatBytes32String("123333")
+            await expect(authorizationControl.saveRoleGroup(groupADM, addRolex, otherAccount.address)).to.be.revertedWithCustomError(authorizationControl,
+                'InvalidName');
+
+        });
+
+    });
+
+    describe("removeRole", function () {
+
+        it("removeRole", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+            const roleAdd = ethers.utils.formatBytes32String("add_role")
+            await authorizationControl.saveRole(roleAdd, otherAccount.address);
+            await authorizationControl.saveRole(roleAdd, owner.address);
+
+            await authorizationControl.removeRole(roleAdd, owner.address)
+            await expect(authorizationControl.removeRole(roleAdd, owner.address)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_AddressDoesNotHaveRole');
+        });
+    });
+
+
+
+
+    describe("removeRoleGroup", function () {
+
+        it("removeRoleGroup", async function () {
+
+            const { animalManager, pessoasManager, authorizationControl, owner, otherAccount } = await loadFixture(deployContract)
+            const roleAdd = ethers.utils.formatBytes32String("add_role")
+            const groupADM = ethers.utils.formatBytes32String("adm_group")
+            await authorizationControl.saveRoleGroup(groupADM, roleAdd, otherAccount.address)
+            await authorizationControl.saveRoleGroup(groupADM, roleAdd, owner.address)
+            await authorizationControl.removeRoleGroup(groupADM, roleAdd, owner.address)
+
+            await expect(authorizationControl.removeRoleGroup(groupADM, roleAdd, owner.address)).to.be.revertedWithCustomError(authorizationControl,
+                'ROLES_AddressDoesNotHaveRoleGroup');
+        });
     });
 
 });

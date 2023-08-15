@@ -2,8 +2,6 @@
 pragma solidity 0.8.18;
 
 interface IAuthorizationControl {
-
-    
     function ensureValidName(bytes32 role) external;
 
     function requireRole(

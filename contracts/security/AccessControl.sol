@@ -8,61 +8,62 @@ import "@openzeppelin/contracts/utils/Address.sol";
 contract AccessControl {
     using Address for address;
 
-    // =========  ERRORS ========= //
-    error ROLES_RequireRole(bytes32 role);
-    error ROLES_RequireRoleGroup(bytes32 group, bytes32 role);
+    error UNAUTHORIZED();
 
     IAuthorizationControl public authorizationControl;
 
     constructor(address addrAuthorizationControl) {
-        require(
-            addrAuthorizationControl.isContract(),
-            "IAuthorizationControl address must be a contract"
-        );
-
-        bool checkIsAuthorizationControl = ERC165Checker.supportsInterface(
-            addrAuthorizationControl,
-            type(IAuthorizationControl).interfaceId
-        );
-        require(
-            checkIsAuthorizationControl,
-            "AuthorizationControl address must be the same type IAuthorizationControl"
-        );
-
+        verifyAuthorizationControl(addrAuthorizationControl);
         authorizationControl = IAuthorizationControl(addrAuthorizationControl);
     }
 
     //======MODIFIER ==========//
-    modifier onlyRole(bytes32 role) {
-        if (!authorizationControl.requireRole(role, msg.sender))
-            revert ROLES_RequireRole(role);
-        _;
-    }
-
-    modifier onlyRoleGroup(bytes32 group, bytes32 role) {
-        if (!authorizationControl.requireRoleGroup(group, role, msg.sender))
-            revert ROLES_RequireRoleGroup(group, role);
-        _;
-    }
 
     modifier onlyMaster() virtual {
-        require(msg.sender == authorizationControl.getMaster(), "UNAUTHORIZED");
-
+        if (!(msg.sender == authorizationControl.getMaster()))
+            revert UNAUTHORIZED();
         _;
     }
 
     function setAuthorizationControl(
         AuthorizationControl authorizationControl_
     ) external onlyMaster {
+        verifyAuthorizationControl(address(authorizationControl_));
         authorizationControl = authorizationControl_;
     }
 
-    function getAuthorizationControl()
-        external
-        view
-        onlyMaster
-        returns (address)
-    {
+    function getAuthorizationControl() external view returns (address) {
         return address(authorizationControl);
+    }
+
+    function verifyRole(
+        bytes32 role,
+        address caller
+    ) public view returns (bool) {
+        return authorizationControl.requireRole(role, caller);
+    }
+
+    function verifyRoleGroup(
+        bytes32 group,
+        bytes32 role,
+        address caller
+    ) public view returns (bool) {
+        return authorizationControl.requireRoleGroup(group, role, caller);
+    }
+
+    function verifyAuthorizationControl(address authControl) internal view {
+        require(
+            authControl.isContract(),
+            "IAuthorizationControl address must be a contract"
+        );
+
+        bool checkIsAuthorizationControl = ERC165Checker.supportsInterface(
+            authControl,
+            type(IAuthorizationControl).interfaceId
+        );
+        require(
+            checkIsAuthorizationControl,
+            "AuthorizationControl address must be the same type IAuthorizationControl"
+        );
     }
 }

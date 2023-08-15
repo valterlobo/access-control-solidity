@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.18;
 
-import "./MyAccessControl.sol";
+import "./AccessControlRoleGroup.sol";
+import "./security/AccessControlProxy.sol";
 
-contract AnimalManager is MyAccessControl {
+contract AnimalManager is AccessControlRoleGroup, AccessControlProxy{
     struct Animal {
         string name;
         string tipo;
@@ -16,9 +17,7 @@ contract AnimalManager is MyAccessControl {
 
     mapping(uint => Animal) private animais;
 
-    constructor(
-        address addrAuthorizationControl
-    ) MyAccessControl(addrAuthorizationControl) {
+    constructor(address addrAcessControl) AccessControlProxy(addrAcessControl){
         count = 0;
     }
 
@@ -26,7 +25,7 @@ contract AnimalManager is MyAccessControl {
         string memory pName,
         string memory pTipo,
         uint8 pIdade
-    ) public onlyRole(MyAccessControl.ADD_ROLE) {
+    ) public onlyRole(AccessControlRoleGroup.ADD_ROLE) {
         count += 1;
         animais[count] = Animal(pName, pTipo, pIdade, count, msg.sender);
     }
@@ -35,7 +34,10 @@ contract AnimalManager is MyAccessControl {
         uint id
     )
         public
-        onlyRoleGroup(MyAccessControl.ADM_GROUP, MyAccessControl.DELETE_ROLE)
+        onlyRoleGroup(
+            AccessControlRoleGroup.ADM_GROUP,
+            AccessControlRoleGroup.DELETE_ROLE
+        )
     {
         delete animais[id];
     }
