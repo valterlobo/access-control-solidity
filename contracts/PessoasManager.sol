@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.18;
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "./AccessControlRoleGroup.sol";
 import "./security/AccessControlProxy.sol";
 
