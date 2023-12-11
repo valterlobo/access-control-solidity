@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import "./AccessControl.sol";
 
 contract AccessControlProxy {
-
     AccessControl accessControl;
 
     // =========  ERRORS ========= //
@@ -28,21 +27,11 @@ contract AccessControlProxy {
         accessControl = AccessControl(addraccessControl);
     }
 
-    function getAccessControl()
-        external
-        view
-        returns (address)
-    {
+    function getAccessControl() external view returns (address) {
         return address(accessControl);
     }
 
-
-     function getAuthorizationControl()
-        external
-        view
-        returns (address)
-    {
+    function getAuthorizationControl() external view returns (address) {
         return accessControl.getAuthorizationControl();
     }
-
 }

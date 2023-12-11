@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import "./AccessControlRoleGroup.sol";
 import "./security/AccessControlProxy.sol";
 
-contract AnimalManager is AccessControlRoleGroup, AccessControlProxy{
+contract AnimalManager is AccessControlRoleGroup, AccessControlProxy {
     struct Animal {
         string name;
         string tipo;
@@ -17,7 +17,7 @@ contract AnimalManager is AccessControlRoleGroup, AccessControlProxy{
 
     mapping(uint => Animal) private animais;
 
-    constructor(address addrAcessControl) AccessControlProxy(addrAcessControl){
+    constructor(address addrAcessControl) AccessControlProxy(addrAcessControl) {
         count = 0;
     }
 

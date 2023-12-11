@@ -2,7 +2,6 @@
 pragma solidity 0.8.18;
 
 contract AccessControlRoleGroup {
-    
     bytes32 constant ADM_GROUP = "adm_group";
 
     bytes32 constant USER_GROUP = "user_group";
